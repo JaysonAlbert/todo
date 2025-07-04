@@ -30,7 +30,7 @@ class TodoItem {
       title: title ?? this.title,
       isCompleted: isCompleted ?? this.isCompleted,
       priority: priority ?? this.priority,
-      dueDate: dueDate,
+      dueDate: dueDate ?? this.dueDate,
       createdAt: createdAt ?? this.createdAt,
     );
   }

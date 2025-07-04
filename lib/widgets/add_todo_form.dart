@@ -182,20 +182,26 @@ class _AddTodoFormState extends State<AddTodoForm> {
                 if (_selectedDueDate != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+                      horizontal: AppSizes.paddingS,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.onSurfaceSecondary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(
+                          Icons.schedule_outlined,
+                          size: 10,
+                          color: AppColors.onSurfaceSecondary,
+                        ),
+                        const SizedBox(width: 2),
                         Text(
                           DateFormat('MMM d').format(_selectedDueDate!),
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.primary,
+                            color: AppColors.onSurfaceSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -204,8 +210,8 @@ class _AddTodoFormState extends State<AddTodoForm> {
                           onTap: _clearDueDate,
                           child: Icon(
                             Icons.close,
-                            size: 12,
-                            color: AppColors.primary,
+                            size: 10,
+                            color: AppColors.onSurfaceSecondary,
                           ),
                         ),
                       ],
