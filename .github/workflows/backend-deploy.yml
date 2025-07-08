@@ -14,10 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Debug Environment
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Files in root:"
+          ls -la
+          echo "Files in backend:"
+          ls -la backend/
+          echo "Go version check:"
+          which go || echo "Go not found"
+      
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
+          cache-dependency-path: backend/go.sum
           
       - name: Build Backend
         run: |
