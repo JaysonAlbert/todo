@@ -1,0 +1,60 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: Build Backend
+        run: |
+          cd backend
+          go mod download
+          CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/server ./cmd/server
+                
+      - name: Create .env file
+        run: |
+          cd backend
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env 
+          echo "PORT=${{ secrets.PORT || '8080' }}" >> .env
+          echo "GIN_MODE=release" >> .env
+
+      - name: Deploy to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "backend/bin/server,backend/.env"
+          target: "/var/www/todo-app/"
+          strip_components: 1
+          
+      - name: Restart Backend
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /var/www/todo-app
+            chmod +x bin/server
+            # Stop existing PM2 process if running
+            pm2 delete todo-backend || true
+            # Start the Go binary with PM2
+            pm2 start bin/server --name todo-backend
+            # Save PM2 process list
+            pm2 save 
