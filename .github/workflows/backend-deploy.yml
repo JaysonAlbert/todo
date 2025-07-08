@@ -3,7 +3,9 @@ name: Backend Deploy
 on:
   push:
     branches: [ main ]
-    # Removed paths restriction - now runs on every push to main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yml'
 
 jobs:
   deploy:
