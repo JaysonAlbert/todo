@@ -11,6 +11,7 @@ type UserRepository interface {
 	Create(user *models.User) error
 	GetByID(id uuid.UUID) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
+	GetByAppleID(appleID string) (*models.User, error)
 	Update(user *models.User) error
 	Delete(id uuid.UUID) error
 	List(offset, limit int) ([]models.User, int64, error)
@@ -40,6 +41,15 @@ func (r *userRepository) GetByID(id uuid.UUID) (*models.User, error) {
 func (r *userRepository) GetByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) GetByAppleID(appleID string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("apple_id = ?", appleID).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

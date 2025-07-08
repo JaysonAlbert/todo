@@ -10,11 +10,13 @@ RUN apk add --no-cache git
 # Copy go mod files
 COPY go.mod go.sum ./
 
-RUN export GOPROXY=https://goproxy.cn,direct
-
 # Download dependencies with cache mount
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
+
+# Verify dependencies
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod verify
 
 # Copy source code
 COPY . .
@@ -27,12 +29,12 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Final stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS
+# Install ca-certificates for HTTPS (do this first to cache it)
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-# Copy the binary from builder stage
+# Copy the binary from builder stage (do this last since it changes often)
 COPY --from=builder /app/server .
 
 # Expose port

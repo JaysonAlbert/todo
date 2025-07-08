@@ -35,7 +35,7 @@ func NewTodoHandler(todoService service.TodoService) *TodoHandler {
 // @Failure 401 {object} utils.ErrorResponse
 // @Failure 422 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
-// @Router /todos [post]
+// @Router /api/v1/todos [post]
 func (h *TodoHandler) CreateTodo(c *gin.Context) {
 	userID, err := getUserIDFromContext(c)
 	if err != nil {
@@ -76,7 +76,7 @@ func (h *TodoHandler) CreateTodo(c *gin.Context) {
 // @Success 200 {object} utils.PaginatedResponse{data=[]models.TodoResponse}
 // @Failure 401 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
-// @Router /todos [get]
+// @Router /api/v1/todos [get]
 func (h *TodoHandler) GetTodos(c *gin.Context) {
 	userID, err := getUserIDFromContext(c)
 	if err != nil {
@@ -135,7 +135,7 @@ func (h *TodoHandler) GetTodos(c *gin.Context) {
 // @Failure 401 {object} utils.ErrorResponse
 // @Failure 404 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
-// @Router /todos/{id} [get]
+// @Router /api/v1/todos/{id} [get]
 func (h *TodoHandler) GetTodo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -172,7 +172,7 @@ func (h *TodoHandler) GetTodo(c *gin.Context) {
 // @Failure 404 {object} utils.ErrorResponse
 // @Failure 422 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
-// @Router /todos/{id} [put]
+// @Router /api/v1/todos/{id} [put]
 func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 	userID, err := getUserIDFromContext(c)
 	if err != nil {
@@ -228,7 +228,7 @@ func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 // @Failure 401 {object} utils.ErrorResponse
 // @Failure 404 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
-// @Router /todos/{id} [delete]
+// @Router /api/v1/todos/{id} [delete]
 func (h *TodoHandler) DeleteTodo(c *gin.Context) {
 	userID, err := getUserIDFromContext(c)
 	if err != nil {

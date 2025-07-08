@@ -14,6 +14,13 @@ type Config struct {
 	DatabaseURL string `mapstructure:"DATABASE_URL"`
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
 	LogLevel    string `mapstructure:"LOG_LEVEL"`
+	
+	// Apple OAuth Configuration
+	AppleTeamID     string `mapstructure:"APPLE_TEAM_ID"`
+	AppleClientID   string `mapstructure:"APPLE_CLIENT_ID"`
+	AppleKeyID      string `mapstructure:"APPLE_KEY_ID"`
+	AppleKeyPath    string `mapstructure:"APPLE_KEY_PATH"`
+	AppleRedirectURL string `mapstructure:"APPLE_REDIRECT_URL"`
 }
 
 func Load() (*Config, error) {
@@ -27,6 +34,13 @@ func Load() (*Config, error) {
 	viper.SetDefault("PORT", "8080")
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-this-in-production")
+	
+	// Apple OAuth defaults (empty - must be configured in production)
+	viper.SetDefault("APPLE_TEAM_ID", "")
+	viper.SetDefault("APPLE_CLIENT_ID", "")
+	viper.SetDefault("APPLE_KEY_ID", "")
+	viper.SetDefault("APPLE_KEY_PATH", "")
+	viper.SetDefault("APPLE_REDIRECT_URL", "http://localhost:8080/auth/apple/callback")
 
 	// Bind environment variables
 	viper.AutomaticEnv()

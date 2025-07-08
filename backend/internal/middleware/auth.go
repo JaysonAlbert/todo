@@ -3,33 +3,38 @@ package middleware
 import (
 	"net/http"
 	"strings"
-	"todo-backend/pkg/utils"
+	"time"
+
+	"todo-backend/internal/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
+// Claims represents the JWT token claims for middleware
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
+	UserID    uuid.UUID `json:"user_id"`
+	Email     string    `json:"email"`
+	AppleID   string    `json:"apple_id,omitempty"`
+	TokenType string    `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
+// AuthMiddleware validates JWT tokens
+func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get token from Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			utils.SendErrorResponse(c, http.StatusUnauthorized, "Authorization header is required", "missing authorization header")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
 			c.Abort()
 			return
 		}
 
-		// Check if the header starts with "Bearer "
+		// Extract token from "Bearer <token>"
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			utils.SendErrorResponse(c, http.StatusUnauthorized, "Invalid authorization header format", "use Bearer <token>")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
 			c.Abort()
 			return
 		}
@@ -37,34 +42,40 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		tokenString := tokenParts[1]
 
 		// Parse and validate token
-		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(jwtSecret), nil
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
+			return []byte(cfg.JWTSecret), nil
 		})
 
-		if err != nil {
-			utils.SendErrorResponse(c, http.StatusUnauthorized, "Invalid or expired token", err.Error())
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		// Check if token is valid
-		if !token.Valid {
-			utils.SendErrorResponse(c, http.StatusUnauthorized, "Invalid token", "token validation failed")
+		// Validate token type (must be access token)
+		if claims.TokenType != "access" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token type"})
 			c.Abort()
 			return
 		}
 
-		// Extract claims
-		claims, ok := token.Claims.(*Claims)
-		if !ok {
-			utils.SendErrorResponse(c, http.StatusUnauthorized, "Invalid token claims", "cannot parse token claims")
+		// Check token expiration
+		if time.Now().After(claims.ExpiresAt.Time) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
 			c.Abort()
 			return
 		}
 
-		// Set user info in context
-		c.Set("userID", claims.UserID)
-		c.Set("email", claims.Email)
+		// Set user context
+		c.Set("user_id", claims.UserID)
+		c.Set("user_email", claims.Email)
+		if claims.AppleID != "" {
+			c.Set("apple_id", claims.AppleID)
+		}
 
 		c.Next()
 	}

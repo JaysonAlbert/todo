@@ -36,7 +36,7 @@ clean: ## Clean build artifacts
 
 # Swagger commands
 swagger: ## Generate Swagger documentation
-	swag init -g cmd/server/main.go
+	swag init -g cmd/server/main.go --parseDependency --parseInternal
 
 swagger-install: ## Install Swagger CLI
 	go install github.com/swaggo/swag/cmd/swag@latest
@@ -44,6 +44,18 @@ swagger-install: ## Install Swagger CLI
 # Docker commands
 docker-build: ## Build Docker image
 	docker build -t $(DOCKER_IMAGE) .
+
+docker-build-fast: ## Build with layer caching (faster for development)
+	docker-compose build
+
+docker-build-clean: ## Build without cache (clean build)
+	docker-compose build --no-cache
+
+docker-rebuild: ## Quick rebuild and restart (uses caching)
+	docker-compose down && docker-compose build && docker-compose up -d
+
+docker-rebuild-clean: ## Full clean rebuild and restart
+	docker-compose down && docker-compose build --no-cache && docker-compose up -d
 
 docker-run: ## Run with Docker Compose
 	docker-compose up -d
