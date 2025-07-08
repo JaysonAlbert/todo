@@ -111,7 +111,7 @@ class _FilterChip extends StatelessWidget {
             decoration: BoxDecoration(
               color: isSelected
                   ? AppColors.surface
-                  : AppColors.primary.withOpacity(0.1),
+                  : AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSizes.radiusS),
             ),
             child: Text(
@@ -127,7 +127,7 @@ class _FilterChip extends StatelessWidget {
       selected: isSelected,
       onSelected: (_) => onTap(),
       backgroundColor: AppColors.surface,
-      selectedColor: AppColors.primary.withOpacity(0.1),
+      selectedColor: AppColors.primary.withValues(alpha: 0.1),
       checkmarkColor: AppColors.primary,
       showCheckmark: false,
       labelStyle: AppTextStyles.body2.copyWith(

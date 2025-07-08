@@ -5,10 +5,10 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo/main.dart';
+import 'package:todo/services/auth_service.dart';
 import 'package:todo/services/storage_service.dart';
 import 'package:todo/utils/constants.dart';
 
@@ -17,12 +17,15 @@ void main() {
     // Mock SharedPreferences for testing
     SharedPreferences.setMockInitialValues({});
 
-    // Initialize storage service
+    // Initialize services
     final storageService = StorageService();
     await storageService.init();
+    final authService = AuthService();
 
     // Build our app and trigger a frame
-    await tester.pumpWidget(MyApp(storageService: storageService));
+    await tester.pumpWidget(
+      MyApp(storageService: storageService, authService: authService),
+    );
 
     // Verify that our app loads with the correct title
     expect(find.text(AppStrings.appTitle), findsOneWidget);

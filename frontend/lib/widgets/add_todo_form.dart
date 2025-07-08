@@ -45,7 +45,9 @@ class _AddTodoFormState extends State<AddTodoForm> {
       _selectedDueDate = null;
 
       // Unfocus to dismiss keyboard
-      FocusScope.of(context).unfocus();
+      if (mounted) {
+        FocusScope.of(context).unfocus();
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -186,7 +188,9 @@ class _AddTodoFormState extends State<AddTodoForm> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.onSurfaceSecondary.withOpacity(0.1),
+                      color: AppColors.onSurfaceSecondary.withValues(
+                        alpha: 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
                     ),
                     child: Row(

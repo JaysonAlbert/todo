@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo/models/todo_item.dart';
 import 'package:todo/models/priority.dart';
+import 'package:todo/providers/auth_provider.dart';
 import 'package:todo/providers/todo_provider.dart';
 import 'package:todo/widgets/add_todo_form.dart';
-import 'package:todo/widgets/filter_bar.dart';
+
 import 'package:todo/widgets/todo_item_widget.dart';
 import 'package:todo/utils/constants.dart';
 
@@ -70,6 +71,16 @@ class _TodoListScreenState extends State<TodoListScreen> {
             ),
           ),
 
+          // User Profile Section
+          _buildUserProfileSection(context),
+
+          // Divider
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+            height: 1,
+            color: AppColors.divider,
+          ),
+
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
@@ -114,7 +125,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -197,7 +208,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
     return Material(
       color: isSelected
-          ? AppColors.primary.withOpacity(0.1)
+          ? AppColors.primary.withValues(alpha: 0.1)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(AppSizes.radiusM),
       child: InkWell(
@@ -237,7 +248,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.primary
-                      : AppColors.onSurfaceSecondary.withOpacity(0.1),
+                      : AppColors.onSurfaceSecondary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusS),
                 ),
                 child: Text(
@@ -274,7 +285,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -391,7 +402,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -424,7 +435,6 @@ class _TodoListScreenState extends State<TodoListScreen> {
         icon = Icons.assignment_turned_in_outlined;
         break;
       case TodoFilter.all:
-      default:
         message = AppStrings.noTodos;
         icon = Icons.add_task_rounded;
         break;
@@ -437,7 +447,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
           Icon(
             icon,
             size: 80,
-            color: AppColors.onSurfaceSecondary.withOpacity(0.5),
+            color: AppColors.onSurfaceSecondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: AppSizes.paddingL),
           Text(
@@ -527,6 +537,128 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
     if (confirmed == true) {
       await todoProvider.clearCompleted();
+    }
+  }
+
+  Widget _buildUserProfileSection(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Container(
+          margin: const EdgeInsets.all(AppSizes.paddingM),
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // User Avatar
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 24),
+              ),
+
+              const SizedBox(width: AppSizes.paddingM),
+
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authProvider.userName ?? 'User',
+                      style: AppTextStyles.body1.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (authProvider.userEmail != null)
+                      Text(
+                        authProvider.userEmail!,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.onSurfaceSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+
+              // Sign Out Button
+              IconButton(
+                onPressed: authProvider.isLoading
+                    ? null
+                    : () => _handleSignOut(context, authProvider),
+                icon: authProvider.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.onSurfaceSecondary,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.logout),
+                iconSize: 20,
+                color: AppColors.onSurfaceSecondary,
+                tooltip: 'Sign Out',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleSignOut(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await authProvider.signOut();
     }
   }
 }

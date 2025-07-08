@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:todo/models/todo_item.dart';
-import 'package:todo/models/priority.dart';
+
 import 'package:todo/utils/constants.dart';
 
 class TodoItemWidget extends StatefulWidget {
@@ -37,7 +37,7 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -118,7 +118,7 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
                               decoration: BoxDecoration(
                                 color: AppColors.getPriorityColor(
                                   widget.todo.priority,
-                                ).withOpacity(0.1),
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(
                                   AppSizes.radiusS,
                                 ),
@@ -143,9 +143,10 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: widget.todo.isOverdue
-                                      ? AppColors.error.withOpacity(0.1)
-                                      : AppColors.onSurfaceSecondary
-                                            .withOpacity(0.1),
+                                      ? AppColors.error.withValues(alpha: 0.1)
+                                      : AppColors.onSurfaceSecondary.withValues(
+                                          alpha: 0.1,
+                                        ),
                                   borderRadius: BorderRadius.circular(
                                     AppSizes.radiusS,
                                   ),
@@ -200,7 +201,9 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
                           iconSize: AppSizes.iconS,
                           tooltip: AppStrings.editTodo,
                           style: IconButton.styleFrom(
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             foregroundColor: AppColors.primary,
                             minimumSize: const Size(36, 36),
                           ),
@@ -212,7 +215,9 @@ class _TodoItemWidgetState extends State<TodoItemWidget> {
                           iconSize: AppSizes.iconS,
                           tooltip: AppStrings.deleteTodo,
                           style: IconButton.styleFrom(
-                            backgroundColor: AppColors.error.withOpacity(0.1),
+                            backgroundColor: AppColors.error.withValues(
+                              alpha: 0.1,
+                            ),
                             foregroundColor: AppColors.error,
                             minimumSize: const Size(36, 36),
                           ),
