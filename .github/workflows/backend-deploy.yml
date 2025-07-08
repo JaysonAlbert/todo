@@ -23,6 +23,10 @@ jobs:
         run: |
           cd backend
           go mod download
+          # Install Swagger CLI and generate docs
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init -g cmd/server/main.go --parseDependency --parseInternal
+          # Build the application
           CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/server ./cmd/server
                 
       - name: Create .env file
