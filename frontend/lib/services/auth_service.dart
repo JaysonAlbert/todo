@@ -100,7 +100,7 @@ class AuthService {
         await _storeAuthData(loginResponse);
         return LoginResult.success(loginResponse);
       } else {
-        return LoginResult.failure('Failed to authenticate with backend' );
+        return LoginResult.failure('Failed to authenticate with backend');
       }
     } catch (e) {
       debugPrint('Apple Sign-In error: $e');

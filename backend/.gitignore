@@ -68,4 +68,12 @@ docs/
 # Certificates
 *.pem
 *.key
-*.crt 
+*.crt
+
+# Secrets and sensitive files
+secrets/
+!secrets/README.md
+!secrets/.gitkeep
+!secrets/*/.gitkeep
+# Apple private keys
+AuthKey_*.p8 

@@ -1,14 +1,16 @@
-version: '3.8'
+# Development Environment
+# Usage: docker-compose up
+# 
+# For production: docker-compose -f docker-compose.prod.yml up
 
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:16
     container_name: todo_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: todo_db
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-todo_db}
     ports:
       - "5432:5432"
     volumes:
@@ -16,25 +18,26 @@ services:
     networks:
       - todo_network
 
-  # Go API Server
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: todo_api
+    env_file:
+      - .env
     environment:
-      ENVIRONMENT: development
-      PORT: 8080
-      DATABASE_URL: postgres://postgres:password@postgres:5432/todo_db?sslmode=disable
-      JWT_SECRET: your-secret-key-change-this-in-production
-      LOG_LEVEL: info
+      # Override database URL to point to postgres service
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-todo_db}?sslmode=disable
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:8080"
     depends_on:
       - postgres
     networks:
       - todo_network
     restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+      - ./secrets:/etc/secrets:ro
 
 volumes:
   postgres_data:

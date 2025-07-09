@@ -413,6 +413,11 @@ func (s *authService) generateJWT(claims models.JWTClaims) (string, error) {
 
 // generateAppleClientSecret creates a JWT client secret for Apple OAuth
 func (s *authService) generateAppleClientSecret() (string, error) {
+	// Check if Apple configuration is properly set up
+	if s.config.AppleKeyPath == "" || s.config.AppleTeamID == "" || s.config.AppleClientID == "" || s.config.AppleKeyID == "" {
+		return "", errors.New("Apple OAuth is not configured: missing required environment variables (APPLE_KEY_PATH, APPLE_TEAM_ID, APPLE_CLIENT_ID, APPLE_KEY_ID)")
+	}
+
 	// Load the private key file
 	keyData, err := os.ReadFile(s.config.AppleKeyPath)
 	if err != nil {

@@ -40,7 +40,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("APPLE_CLIENT_ID", "")
 	viper.SetDefault("APPLE_KEY_ID", "")
 	viper.SetDefault("APPLE_KEY_PATH", "")
-	viper.SetDefault("APPLE_REDIRECT_URL", "http://localhost:8080/auth/apple/callback")
+	viper.SetDefault("APPLE_REDIRECT_URL", "http://localhost:8080/api/v1/auth/apple/callback")
 
 	// Bind environment variables
 	viper.AutomaticEnv()
@@ -58,6 +58,8 @@ func Load() (*Config, error) {
 		config.DatabaseURL = getDefaultDatabaseURL()
 		fmt.Printf("Using default DATABASE_URL: %s\n", config.DatabaseURL)
 	}
+
+	fmt.Printf("Config: %+v\n", config)
 
 	return &config, nil
 }
