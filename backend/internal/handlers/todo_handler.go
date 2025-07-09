@@ -261,7 +261,7 @@ func (h *TodoHandler) DeleteTodo(c *gin.Context) {
 }
 
 func getUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
-	userIDInterface, exists := c.Get("userID")
+	userIDInterface, exists := c.Get("user_id")
 	if !exists {
 		return uuid.Nil, errors.New("user ID not found in context")
 	}

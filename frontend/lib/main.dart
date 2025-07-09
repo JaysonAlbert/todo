@@ -7,6 +7,9 @@ import 'package:todo/screens/todo_list_screen.dart';
 import 'package:todo/services/api_service.dart';
 import 'package:todo/services/auth_service.dart';
 import 'package:todo/services/storage_service.dart';
+import 'package:todo/services/local_todo_service.dart';
+import 'package:todo/services/sync_service.dart';
+import 'package:todo/services/connectivity_service.dart';
 import 'package:todo/utils/constants.dart';
 
 void main() async {
@@ -17,18 +20,39 @@ void main() async {
   await storageService.init();
 
   final authService = AuthService();
+  final connectivityService = ConnectivityService();
+  final localTodoService = LocalTodoService(storageService);
+  final apiService = ApiService(authService);
+  final syncService = SyncService(apiService, localTodoService);
 
-  runApp(MyApp(storageService: storageService, authService: authService));
+  runApp(
+    MyApp(
+      storageService: storageService,
+      authService: authService,
+      connectivityService: connectivityService,
+      localTodoService: localTodoService,
+      apiService: apiService,
+      syncService: syncService,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final StorageService storageService;
   final AuthService authService;
+  final ConnectivityService connectivityService;
+  final LocalTodoService localTodoService;
+  final ApiService apiService;
+  final SyncService syncService;
 
   const MyApp({
     super.key,
     required this.storageService,
     required this.authService,
+    required this.connectivityService,
+    required this.localTodoService,
+    required this.apiService,
+    required this.syncService,
   });
 
   @override
@@ -37,7 +61,12 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider(authService)),
         ChangeNotifierProvider(
-          create: (context) => TodoProvider(ApiService(authService)),
+          create: (context) => TodoProvider(
+            apiService,
+            localTodoService,
+            syncService,
+            connectivityService,
+          ),
         ),
       ],
       child: MaterialApp(
@@ -77,6 +106,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             return const SplashScreen();
 
           case AuthState.authenticated:
+          case AuthState.offlineMode:
             return const TodoListScreen();
 
           case AuthState.unauthenticated:

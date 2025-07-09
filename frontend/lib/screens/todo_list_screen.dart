@@ -5,7 +5,7 @@ import 'package:todo/models/priority.dart';
 import 'package:todo/providers/auth_provider.dart';
 import 'package:todo/providers/todo_provider.dart';
 import 'package:todo/widgets/add_todo_form.dart';
-
+import 'package:todo/widgets/app_mode_widget.dart';
 import 'package:todo/widgets/todo_item_widget.dart';
 import 'package:todo/utils/constants.dart';
 
@@ -22,7 +22,15 @@ class _TodoListScreenState extends State<TodoListScreen> {
     super.initState();
     // Load todos when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TodoProvider>().loadTodos();
+      final authProvider = context.read<AuthProvider>();
+      final todoProvider = context.read<TodoProvider>();
+
+      // If user is in offline mode from login, ensure TodoProvider is in offline mode
+      if (authProvider.isOfflineMode && todoProvider.isOnlineMode) {
+        todoProvider.switchToOfflineMode();
+      } else {
+        todoProvider.loadTodos();
+      }
     });
   }
 
@@ -89,6 +97,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // App Mode Section
+                  const AppModeWidget(),
+
+                  const SizedBox(height: AppSizes.paddingXL),
+
                   // Quick Add Section
                   _buildQuickAddSection(todoProvider),
 
@@ -557,81 +570,248 @@ class _TodoListScreenState extends State<TodoListScreen> {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              // User Avatar
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary,
-                      AppColors.primary.withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
+          child: authProvider.isOfflineMode
+              ? _buildOfflineUserSection(context, authProvider)
+              : _buildAuthenticatedUserSection(context, authProvider),
+        );
+      },
+    );
+  }
+
+  Widget _buildOfflineUserSection(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) {
+    return Column(
+      children: [
+        // Top row with avatar and user info
+        Row(
+          children: [
+            // User Avatar
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.orange, Colors.orange.withValues(alpha: 0.8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 24),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(
+                Icons.person_off,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
 
-              const SizedBox(width: AppSizes.paddingM),
+            const SizedBox(width: AppSizes.paddingS),
 
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      authProvider.userName ?? 'User',
-                      style: AppTextStyles.body1.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
+            // User Info
+            Expanded(
+              child: Text(
+                'Offline User',
+                style: AppTextStyles.body1.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            // Login Button
+            authProvider.isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (authProvider.userEmail != null)
-                      Text(
-                        authProvider.userEmail!,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.onSurfaceSecondary,
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      child: InkWell(
+                        onTap: () => _handleLogin(context, authProvider),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Icon(
+                            Icons.login,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
                       ),
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+          ],
+        ),
 
-              // Sign Out Button
-              IconButton(
-                onPressed: authProvider.isLoading
-                    ? null
-                    : () => _handleSignOut(context, authProvider),
-                icon: authProvider.isLoading
-                    ? const SizedBox(
+        const SizedBox(height: AppSizes.paddingXS),
+
+        // Bottom row with description
+        Row(
+          children: [
+            const SizedBox(width: 48), // Space to align with text above
+            Expanded(
+              child: Text(
+                'Tap to sync with cloud',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.onSurfaceSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAuthenticatedUserSection(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) {
+    return Row(
+      children: [
+        // User Avatar
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary,
+                AppColors.primary.withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.person, color: Colors.white, size: 24),
+        ),
+
+        const SizedBox(width: AppSizes.paddingM),
+
+        // User Info
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                authProvider.userName ?? 'User',
+                style: AppTextStyles.body1.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (authProvider.userEmail != null)
+                Text(
+                  authProvider.userEmail!,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.onSurfaceSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ),
+
+        // Sign Out Button
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            border: Border.all(
+              color: AppColors.error.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            child: InkWell(
+              onTap: authProvider.isLoading
+                  ? null
+                  : () => _handleSignOut(context, authProvider),
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: authProvider.isLoading
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.onSurfaceSecondary,
+                            AppColors.error,
                           ),
                         ),
                       )
-                    : const Icon(Icons.logout),
-                iconSize: 20,
-                color: AppColors.onSurfaceSecondary,
-                tooltip: 'Sign Out',
+                    : Icon(
+                        Icons.logout_rounded,
+                        size: 20,
+                        color: AppColors.error,
+                      ),
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ),
+      ],
     );
+  }
+
+  Future<void> _handleLogin(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login'),
+        content: const Text(
+          'Do you want to go to the login screen to sign in with your account?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Go to Login'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await authProvider.signOut();
+    }
   }
 
   Future<void> _handleSignOut(
@@ -650,7 +830,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error,),
             child: const Text('Sign Out'),
           ),
         ],

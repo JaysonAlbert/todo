@@ -1,7 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:todo/services/auth_service.dart';
 
-enum AuthState { initial, loading, authenticated, unauthenticated, error }
+enum AuthState {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  offlineMode,
+  error,
+}
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -19,7 +26,9 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _state == AuthState.authenticated;
-  String? get userName => _userData?['name'];
+  bool get isOfflineMode => _state == AuthState.offlineMode;
+  bool get canAccessApp => _state == AuthState.authenticated || _state == AuthState.offlineMode;
+  String? get userName => _userData?['name'] ?? (_state == AuthState.offlineMode ? 'Offline User' : null);
   String? get userEmail => _userData?['email'];
 
   // Initialize authentication state
@@ -58,6 +67,11 @@ class AuthProvider extends ChangeNotifier {
 
         debugPrint('Sign-in successful for user: ${_userData?['name']}');
         return true;
+      } else if (result.isCanceled) {
+        // User canceled sign-in, don't show error
+        debugPrint('User canceled Apple Sign-In');
+        _setState(AuthState.unauthenticated);
+        return false;
       } else {
         _setError(result.error ?? 'Apple Sign-In failed');
         _setState(AuthState.error);
@@ -87,6 +101,27 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Sign-out error: $e');
       _setError('Failed to sign out');
+      _setState(AuthState.error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Enter offline mode
+  Future<void> enterOfflineMode() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      // Clear any existing auth data
+      await _authService.signOut();
+      _userData = null;
+      _setState(AuthState.offlineMode);
+
+      debugPrint('User entered offline mode');
+    } catch (e) {
+      debugPrint('Offline mode entry error: $e');
+      _setError('Failed to enter offline mode');
       _setState(AuthState.error);
     } finally {
       _setLoading(false);
@@ -144,6 +179,4 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
-
-
 }

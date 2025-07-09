@@ -7,6 +7,10 @@ class TodoItem {
   final Priority priority;
   final DateTime? dueDate;
   final DateTime createdAt;
+  final DateTime? lastModified;
+  final bool isSynced;
+  final String? serverId; // For mapping local todos to server todos
+  final bool isDeleted; // Soft delete for sync purposes
 
   const TodoItem({
     required this.id,
@@ -15,6 +19,10 @@ class TodoItem {
     required this.priority,
     required this.createdAt,
     this.dueDate,
+    this.lastModified,
+    this.isSynced = false,
+    this.serverId,
+    this.isDeleted = false,
   });
 
   TodoItem copyWith({
@@ -24,6 +32,10 @@ class TodoItem {
     Priority? priority,
     DateTime? dueDate,
     DateTime? createdAt,
+    DateTime? lastModified,
+    bool? isSynced,
+    String? serverId,
+    bool? isDeleted,
   }) {
     return TodoItem(
       id: id ?? this.id,
@@ -32,6 +44,10 @@ class TodoItem {
       priority: priority ?? this.priority,
       dueDate: dueDate ?? this.dueDate,
       createdAt: createdAt ?? this.createdAt,
+      lastModified: lastModified ?? this.lastModified,
+      isSynced: isSynced ?? this.isSynced,
+      serverId: serverId ?? this.serverId,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
@@ -43,6 +59,10 @@ class TodoItem {
       'priority': priority.name,
       'createdAt': createdAt.toIso8601String(),
       'dueDate': dueDate?.toIso8601String(),
+      'lastModified': lastModified?.toIso8601String(),
+      'isSynced': isSynced,
+      'serverId': serverId,
+      'isDeleted': isDeleted,
     };
   }
 
@@ -65,6 +85,12 @@ class TodoItem {
       dueDate: json['dueDate'] != null
           ? DateTime.parse(json['dueDate'] as String)
           : null,
+      lastModified: json['lastModified'] != null
+          ? DateTime.parse(json['lastModified'] as String)
+          : null,
+      isSynced: json['isSynced'] as bool? ?? false,
+      serverId: json['serverId'] as String?,
+      isDeleted: json['isDeleted'] as bool? ?? false,
     );
   }
 
@@ -85,12 +111,27 @@ class TodoItem {
         other.isCompleted == isCompleted &&
         other.priority == priority &&
         other.dueDate == dueDate &&
-        other.createdAt == createdAt;
+        other.createdAt == createdAt &&
+        other.lastModified == lastModified &&
+        other.isSynced == isSynced &&
+        other.serverId == serverId &&
+        other.isDeleted == isDeleted;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, title, isCompleted, priority, dueDate, createdAt);
+    return Object.hash(
+      id,
+      title,
+      isCompleted,
+      priority,
+      dueDate,
+      createdAt,
+      lastModified,
+      isSynced,
+      serverId,
+      isDeleted,
+    );
   }
 
   @override
@@ -101,7 +142,42 @@ class TodoItem {
         'isCompleted: $isCompleted, '
         'priority: $priority, '
         'dueDate: $dueDate, '
-        'createdAt: $createdAt'
+        'createdAt: $createdAt, '
+        'lastModified: $lastModified, '
+        'isSynced: $isSynced, '
+        'serverId: $serverId, '
+        'isDeleted: $isDeleted'
         ')';
+  }
+
+  // Sync-related convenience methods
+  bool get needsSync => !isSynced && !isDeleted;
+  bool get isLocal => serverId == null;
+  bool get hasServerVersion => serverId != null;
+
+  /// Create a new TodoItem with updated sync status
+  TodoItem markAsSynced({String? newServerId}) {
+    return copyWith(
+      isSynced: true,
+      serverId: newServerId ?? serverId,
+      lastModified: DateTime.now(),
+    );
+  }
+
+  /// Create a new TodoItem marked as needing sync
+  TodoItem markAsModified() {
+    return copyWith(
+      isSynced: false,
+      lastModified: DateTime.now(),
+    );
+  }
+
+  /// Create a new TodoItem marked for deletion
+  TodoItem markAsDeleted() {
+    return copyWith(
+      isDeleted: true,
+      isSynced: false,
+      lastModified: DateTime.now(),
+    );
   }
 }

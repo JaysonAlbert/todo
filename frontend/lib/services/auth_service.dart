@@ -11,10 +11,23 @@ class AuthService {
   static const String _userDataKey = 'user_data';
 
   final Dio _dio;
+  final Dio _refreshDio; // Separate instance for token refresh
   final FlutterSecureStorage _storage;
+  bool _isRefreshing = false; // Prevent multiple simultaneous refreshes
 
   AuthService()
     : _dio = Dio(
+        BaseOptions(
+          baseUrl: _baseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      ),
+      _refreshDio = Dio(
         BaseOptions(
           baseUrl: _baseUrl,
           connectTimeout: const Duration(seconds: 30),
@@ -42,25 +55,38 @@ class AuthService {
         },
         onError: (error, handler) async {
           // Handle 401 errors by attempting to refresh the token
-          if (error.response?.statusCode == 401) {
+          if (error.response?.statusCode == 401 && !_isRefreshing) {
+            debugPrint('Received 401, attempting token refresh...');
             final refreshed = await _refreshTokenIfNeeded();
             if (refreshed) {
+              debugPrint('Token refreshed successfully, retrying request...');
               // Retry the original request with new token
               final newToken = await getAccessToken();
               if (newToken != null) {
-                error.requestOptions.headers['Authorization'] =
-                    'Bearer $newToken';
-                final clonedRequest = await _dio.request(
-                  error.requestOptions.path,
-                  options: Options(
-                    method: error.requestOptions.method,
-                    headers: error.requestOptions.headers,
-                  ),
-                  data: error.requestOptions.data,
-                  queryParameters: error.requestOptions.queryParameters,
+                final retryOptions = Options(
+                  method: error.requestOptions.method,
+                  headers: {
+                    ...error.requestOptions.headers,
+                    'Authorization': 'Bearer $newToken',
+                  },
                 );
-                return handler.resolve(clonedRequest);
+
+                try {
+                  final clonedRequest = await _dio.request(
+                    error.requestOptions.path,
+                    options: retryOptions,
+                    data: error.requestOptions.data,
+                    queryParameters: error.requestOptions.queryParameters,
+                  );
+                  return handler.resolve(clonedRequest);
+                } catch (retryError) {
+                  debugPrint('Retry request failed: $retryError');
+                  return handler.next(error);
+                }
               }
+            } else {
+              debugPrint('Token refresh failed, clearing auth data...');
+              await signOut(); // Clear invalid tokens
             }
           }
           handler.next(error);
@@ -104,6 +130,15 @@ class AuthService {
       }
     } catch (e) {
       debugPrint('Apple Sign-In error: $e');
+
+      // Check if user canceled the sign-in
+      final errorString = e.toString();
+      if (errorString.contains('AuthorizationErrorCode.canceled') ||
+          errorString.contains('error 1001')) {
+        debugPrint('User canceled Apple Sign-In');
+        return LoginResult.canceled();
+      }
+
       return LoginResult.failure('Apple Sign-In failed: ${e.toString()}');
     }
   }
@@ -174,35 +209,57 @@ class AuthService {
   }
 
   Future<bool> _refreshTokenIfNeeded() async {
+    if (_isRefreshing) {
+      debugPrint('Token refresh already in progress...');
+      return false;
+    }
+
+    _isRefreshing = true;
+
     try {
       final refreshToken = await getRefreshToken();
-      if (refreshToken == null) return false;
+      if (refreshToken == null) {
+        debugPrint('No refresh token available');
+        return false;
+      }
 
-      final response = await _dio.post(
+      debugPrint('Attempting to refresh token...');
+
+      // Use separate Dio instance to avoid interceptor loops
+      final response = await _refreshDio.post(
         '/auth/token/refresh',
         data: {'refresh_token': refreshToken},
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
+        debugPrint('Token refresh API call successful');
         await _storeAuthData(response.data['data']);
         return true;
+      } else {
+        debugPrint('Token refresh API call failed: ${response.data}');
+        return false;
       }
-
-      return false;
     } catch (e) {
-      debugPrint('Token refresh failed: $e');
+      debugPrint('Token refresh failed with error: $e');
       return false;
+    } finally {
+      _isRefreshing = false;
     }
   }
 
   Future<void> signOut() async {
     try {
+      // Reset refresh flag
+      _isRefreshing = false;
+
       // Clear stored tokens and user data
       await Future.wait([
         _storage.delete(key: _accessTokenKey),
         _storage.delete(key: _refreshTokenKey),
         _storage.delete(key: _userDataKey),
       ]);
+
+      debugPrint('Sign out completed successfully');
     } catch (e) {
       debugPrint('Sign out error: $e');
     }
@@ -269,16 +326,21 @@ class AuthService {
 
 class LoginResult {
   final bool isSuccess;
+  final bool isCanceled;
   final String? error;
   final Map<String, dynamic>? data;
 
-  LoginResult._(this.isSuccess, this.error, this.data);
+  LoginResult._(this.isSuccess, this.isCanceled, this.error, this.data);
 
   factory LoginResult.success(Map<String, dynamic> data) {
-    return LoginResult._(true, null, data);
+    return LoginResult._(true, false, null, data);
   }
 
   factory LoginResult.failure(String error) {
-    return LoginResult._(false, error, null);
+    return LoginResult._(false, false, error, null);
+  }
+
+  factory LoginResult.canceled() {
+    return LoginResult._(false, true, null, null);
   }
 }

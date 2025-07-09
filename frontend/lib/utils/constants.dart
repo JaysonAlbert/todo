@@ -4,6 +4,7 @@ import 'package:todo/models/priority.dart';
 class AppColors {
   static const Color primary = Color(0xFF007AFF);
   static const Color primaryDark = Color(0xFF0056CC);
+  static const Color onPrimary = Colors.white;
   static const Color success = Color(0xFF34C759);
   static const Color warning = Color(0xFFFF9500);
   static const Color error = Color(0xFFFF3B30);
@@ -43,6 +44,7 @@ class AppSizes {
   static const double radiusM = 12.0;
   static const double radiusL = 20.0;
 
+  static const double iconXS = 14.0;
   static const double iconS = 18.0;
   static const double iconM = 24.0;
   static const double iconL = 32.0;
