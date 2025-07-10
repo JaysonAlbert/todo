@@ -26,6 +26,43 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
+!.env.example
+!.env.template
+
+# Configuration files with secrets
+config.json
+config.yaml
+config.yml
+**/config/*secret*
+**/config/*prod*
+**/*_config.json
+**/*_config.yaml
+
+# API Keys and Tokens
+**/api_keys.go
+**/*_token*
+**/*_secret*
+**/*_credential*
+**/*_key.go
+
+# Database connection strings and credentials
+database.env
+db_credentials.*
+connection_string.*
+
+# JWT and encryption keys
+*.private
+*.public
+jwt_secret*
+encryption_key*
+
+# Cloud provider credentials
+aws_credentials
+gcp_credentials.json
+azure_credentials
 
 # IDEs
 .vscode/

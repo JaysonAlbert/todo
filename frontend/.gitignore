@@ -7,7 +7,37 @@
 .buildlog/
 .history
 
+# IDE/Editor specific
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
 
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Security - API Keys and Sensitive Configuration
+.env
+.env.*
+!.env.example
+config/secrets.dart
+lib/config/api_keys.dart
+lib/config/prod_config.dart
+**/*_secret*
+**/*_key*
+**/*_token*
+**/*_credential*
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+
+# Firebase and Third-party Services
+**/firebase_app_id_file.json
+**/firebase_options.dart
 
 # Flutter repo-specific
 /bin/cache/
@@ -93,6 +123,12 @@ unlinked_spec.ds
 **/macos/Flutter/GeneratedPluginRegistrant.swift
 **/macos/Flutter/ephemeral
 **/xcuserdata/
+**/macos/**/dgph
+**/macos/**/*.xcworkspace/xcuserdata/
+**/macos/**/*.xcodeproj/xcuserdata/
+**/macos/**/*.xcodeproj/project.xcworkspace/xcuserdata/
+**/macos/**/DerivedData/
+**/macos/**/.swiftpm/
 
 # Windows
 **/windows/flutter/generated_plugin_registrant.cc
