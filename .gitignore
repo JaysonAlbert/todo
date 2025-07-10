@@ -57,3 +57,6 @@ Icon?
 **/*_token
 **/api_key*
 **/private_key* 
+
+nginx-todo.conf
+deploy-web.sh

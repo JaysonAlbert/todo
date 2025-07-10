@@ -3,9 +3,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:todo/utils/constants.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://localhost:8080/api/v1';
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userDataKey = 'user_data';
@@ -18,7 +18,7 @@ class AuthService {
   AuthService()
     : _dio = Dio(
         BaseOptions(
-          baseUrl: _baseUrl,
+          baseUrl: AppUrls.baseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
           headers: {
@@ -29,7 +29,7 @@ class AuthService {
       ),
       _refreshDio = Dio(
         BaseOptions(
-          baseUrl: _baseUrl,
+          baseUrl: AppUrls.baseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
           headers: {
@@ -106,27 +106,67 @@ class AuthService {
         );
       }
 
-      // Perform Apple Sign-In
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
+      // Special handling for web platform
+      if (kIsWeb) {
+        debugPrint('Attempting Apple Sign-In on web platform');
 
-      debugPrint(
-        'Apple Sign-In successful. UserID: ${credential.userIdentifier}',
-      );
+        // For local development, provide a fallback
+        if (AppUrls.appleServiceId == 'com.yourcompany.yourapp.service') {
+          debugPrint('Apple Sign-In web not configured for production use');
+          return LoginResult.failure(
+            'Apple Sign-In web is not configured. Please set up your Apple Service ID or use a different sign-in method.',
+          );
+        }
 
-      // Send the authorization code to our backend
-      final loginResponse = await _authenticateWithBackend(credential);
+        // For web, we need to provide additional configuration
+        final credential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          webAuthenticationOptions: WebAuthenticationOptions(
+            clientId: AppUrls.appleServiceId,
+            redirectUri: Uri.parse(AppUrls.appleRedirectUri),
+          ),
+        );
 
-      if (loginResponse != null) {
-        // Store tokens and user data
-        await _storeAuthData(loginResponse);
-        return LoginResult.success(loginResponse);
+        debugPrint(
+          'Apple Sign-In successful on web. UserID: ${credential.userIdentifier}',
+        );
+
+        // Send the authorization code to our backend
+        final loginResponse = await _authenticateWithBackend(credential);
+
+        if (loginResponse != null) {
+          // Store tokens and user data
+          await _storeAuthData(loginResponse);
+          return LoginResult.success(loginResponse);
+        } else {
+          return LoginResult.failure('Failed to authenticate with backend');
+        }
       } else {
-        return LoginResult.failure('Failed to authenticate with backend');
+        // Native platform handling (iOS, macOS)
+        final credential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+        );
+
+        debugPrint(
+          'Apple Sign-In successful. UserID: ${credential.userIdentifier}',
+        );
+
+        // Send the authorization code to our backend
+        final loginResponse = await _authenticateWithBackend(credential);
+
+        if (loginResponse != null) {
+          // Store tokens and user data
+          await _storeAuthData(loginResponse);
+          return LoginResult.success(loginResponse);
+        } else {
+          return LoginResult.failure('Failed to authenticate with backend');
+        }
       }
     } catch (e) {
       debugPrint('Apple Sign-In error: $e');
@@ -139,7 +179,41 @@ class AuthService {
         return LoginResult.canceled();
       }
 
+      // Handle specific web errors
+      if (kIsWeb && errorString.contains('TypeErrorImpl')) {
+        debugPrint('Web JavaScript interop error detected');
+        return LoginResult.failure(
+          'Apple Sign-In is not properly configured for web. Please set up your Apple Service ID or use offline mode.',
+        );
+      }
+
       return LoginResult.failure('Apple Sign-In failed: ${e.toString()}');
+    }
+  }
+
+  // Process Apple Sign-In callback from URL (for web)
+  Future<LoginResult> processAppleCallback(String code, String? state) async {
+    try {
+      debugPrint('Processing Apple callback with authorization code');
+
+      final response = await _dio.post(
+        '/auth/apple/callback',
+        data: {'code': code, 'state': state},
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final loginData = response.data['data'];
+        await _storeAuthData(loginData);
+        return LoginResult.success(loginData);
+      } else {
+        return LoginResult.failure('Failed to authenticate with backend');
+      }
+    } on DioException catch (e) {
+      debugPrint('Apple callback processing error: ${e.response?.data}');
+      return LoginResult.failure('Authentication failed: ${e.message}');
+    } catch (e) {
+      debugPrint('Apple callback processing error: $e');
+      return LoginResult.failure('Authentication failed: ${e.toString()}');
     }
   }
 

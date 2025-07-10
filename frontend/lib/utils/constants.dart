@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo/models/priority.dart';
+import 'package:todo/config/environment.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF007AFF);
@@ -211,4 +212,13 @@ class AppTheme {
       ),
     );
   }
+}
+
+class AppUrls {
+  AppUrls._();
+
+  // Use environment configuration for all URLs
+  static String get baseUrl => EnvironmentConfig.apiBaseUrl;
+  static String get appleServiceId => EnvironmentConfig.appleServiceId;
+  static String get appleRedirectUri => EnvironmentConfig.appleRedirectUri;
 }

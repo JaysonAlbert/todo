@@ -27,8 +27,11 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _state == AuthState.authenticated;
   bool get isOfflineMode => _state == AuthState.offlineMode;
-  bool get canAccessApp => _state == AuthState.authenticated || _state == AuthState.offlineMode;
-  String? get userName => _userData?['name'] ?? (_state == AuthState.offlineMode ? 'Offline User' : null);
+  bool get canAccessApp =>
+      _state == AuthState.authenticated || _state == AuthState.offlineMode;
+  String? get userName =>
+      _userData?['name'] ??
+      (_state == AuthState.offlineMode ? 'Offline User' : null);
   String? get userEmail => _userData?['email'];
 
   // Initialize authentication state
@@ -158,6 +161,13 @@ class AuthProvider extends ChangeNotifier {
 
   // Get the AuthService instance for direct API calls
   AuthService get authService => _authService;
+
+  // Set authenticated state directly (used for Apple callback processing)
+  void setAuthenticatedState(Map<String, dynamic> userData) {
+    _userData = userData;
+    _setState(AuthState.authenticated);
+    debugPrint('Authentication state set for user: ${userData['name']}');
+  }
 
   // Private helper methods
   void _setState(AuthState newState) {

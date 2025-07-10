@@ -11,6 +11,8 @@ import 'package:todo/services/local_todo_service.dart';
 import 'package:todo/services/sync_service.dart';
 import 'package:todo/services/connectivity_service.dart';
 import 'package:todo/utils/constants.dart';
+import 'package:todo/utils/web_utils.dart'
+    if (dart.library.io) 'package:todo/utils/web_utils_stub.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,8 +94,46 @@ class _AuthWrapperState extends State<AuthWrapper> {
     super.initState();
     // Initialize authentication state
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleInitialUrl();
       context.read<AuthProvider>().initialize();
     });
+  }
+
+  // Handle Apple Sign-In callback URL
+  void _handleInitialUrl() {
+    handleAppleCallback((uri) => _handleAppleCallback(uri));
+  }
+
+  void _handleAppleCallback(Uri uri) async {
+    try {
+      final code = uri.queryParameters['code'];
+      final state = uri.queryParameters['state'];
+
+      if (code != null) {
+        debugPrint(
+          'Received Apple Sign-In callback with code: ${code.substring(0, 10)}...',
+        );
+
+        final authProvider = context.read<AuthProvider>();
+
+        // Process the authorization code through your backend
+        final result = await authProvider.authService.processAppleCallback(
+          code,
+          state,
+        );
+
+        if (result.isSuccess && result.data != null) {
+          authProvider.setAuthenticatedState(result.data!['user']);
+
+          // Clean up URL by redirecting to home
+          cleanupUrl();
+        } else {
+          debugPrint('Apple callback processing failed: ${result.error}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error handling Apple callback: $e');
+    }
   }
 
   @override

@@ -52,12 +52,14 @@ dependencies:
   
   # Apple Sign-In authentication
   sign_in_with_apple: ^6.1.1
+  sign_in_with_apple_web: ^2.1.0
   
   # Secure token storage
   flutter_secure_storage: ^9.0.0
   
   # Network connectivity detection
   connectivity_plus: ^6.0.5
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
