@@ -275,11 +275,27 @@ class _LoginScreenState extends State<LoginScreen> {
             // Login Buttons
             Column(
               children: [
-                // Apple Sign-In Button
-                _buildAppleSignInButton(context, authProvider),
+                // Apple Sign-In Button - only show on supported platforms
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    // Check if Apple Sign-In is supported on this platform
+                    final isAppleSignInSupported =
+                        authProvider.authService.isAppleSignInSupported;
+
+                    if (!isAppleSignInSupported) {
+                      return const SizedBox.shrink(); // Hide on unsupported platforms
+                    }
+
+                    return Column(
+                      children: [
+                        _buildAppleSignInButton(context, authProvider),
+                        const SizedBox(height: AppSizes.paddingS),
+                      ],
+                    );
+                  },
+                ),
 
                 // Future login methods placeholder
-                const SizedBox(height: AppSizes.paddingS),
                 _buildComingSoonButton(
                   'Continue with Google',
                   Icons.g_mobiledata,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -97,8 +98,34 @@ class AuthService {
 
   // Apple Sign-In Methods
 
+  /// Check if Apple Sign-In is supported on the current platform
+  bool get isAppleSignInSupported {
+    if (kIsWeb) {
+      return true; // Web is supported with proper configuration
+    }
+
+    // Apple Sign-In is only supported on iOS and macOS
+    if (!kIsWeb) {
+      try {
+        return Platform.isIOS || Platform.isMacOS;
+      } catch (e) {
+        // If Platform check fails, assume unsupported
+        return false;
+      }
+    }
+
+    return false;
+  }
+
   Future<LoginResult> signInWithApple() async {
     try {
+      // First check if Apple Sign-In is supported on this platform
+      if (!isAppleSignInSupported) {
+        return LoginResult.failure(
+          'Apple Sign-In is not supported on this platform. Please use offline mode or try a different device.',
+        );
+      }
+
       // Check if Apple Sign-In is available
       if (!await SignInWithApple.isAvailable()) {
         return LoginResult.failure(
@@ -170,6 +197,13 @@ class AuthService {
       }
     } catch (e) {
       debugPrint('Apple Sign-In error: $e');
+
+      // Handle platform-specific errors
+      if (e.toString().contains('MissingPluginException')) {
+        return LoginResult.failure(
+          'Apple Sign-In is not supported on this platform. Please use offline mode or try a different device.',
+        );
+      }
 
       // Check if user canceled the sign-in
       final errorString = e.toString();
